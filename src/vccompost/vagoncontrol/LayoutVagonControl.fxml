@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane fx:id="root" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vccompost.vagoncontrol.LayoutVagonController">
+  <!-- TODO Add Nodes -->
+  <children>
+    <Button fx:id="cTemp" layoutX="18.0" layoutY="14.0" mnemonicParsing="false" onAction="#tempClick" text="Tomar Datos" />
+    <TextArea fx:id="text" layoutX="66.0" layoutY="448.0" prefHeight="225.0" prefWidth="734.0" wrapText="true" />
+    <Label id="label" fx:id="Label1" layoutX="14.0" layoutY="46.0" prefHeight="27.0" prefWidth="71.0" text="Label" />
+    <ListView fx:id="list1" layoutX="185.0" layoutY="22.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list3" layoutX="601.0" layoutY="22.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list6" layoutX="394.0" layoutY="235.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list4" layoutX="808.0" layoutY="22.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list2" layoutX="394.0" layoutY="22.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list5" layoutX="185.0" layoutY="235.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list7" layoutX="601.0" layoutY="235.0" prefHeight="192.0" prefWidth="200.0" />
+    <ListView fx:id="list8" layoutX="808.0" layoutY="236.0" prefHeight="192.0" prefWidth="200.0" />
+      <Button fx:id="iBomba" layoutX="14.0" layoutY="73.0" mnemonicParsing="false" onAction="#iBombClick" text="Encender Intercambiador" />
+      <Label fx:id="lblBomba" layoutX="16.0" layoutY="147.0" text="Intercambiador Apagado" />
+      <Button fx:id="aBomba" layoutX="16.0" layoutY="114.0" mnemonicParsing="false" onAction="#aBombClick" text="Apagar Intercambiador" />
+      <ListView fx:id="horas" layoutX="808.0" layoutY="448.0" prefHeight="200.0" prefWidth="200.0" />
+      <Label layoutX="241.0" layoutY="6.0" text="Temp S1 Externa" />
+      <Label layoutX="451.0" layoutY="6.0" text="Temp S1 Interna" />
+      <Label layoutX="241.0" layoutY="219.0" text="Temp Ambiental" />
+      <Label layoutX="431.0" layoutY="219.0" text="Temp Centro del Vagón" />
+      <Label layoutX="658.0" layoutY="6.0" text="Temp S2 Interna" />
+      <Label layoutX="645.0" layoutY="219.0" text="Temp Trasera Interna" />
+      <Label layoutX="852.0" layoutY="219.0" text="Temp Trasera Externa" />
+      <Label layoutX="808.0" layoutY="431.0" text="Horas" />
+      <Label layoutX="864.0" layoutY="6.0" text="Temp S2 Externa" />
+  </children>
+</AnchorPane>
