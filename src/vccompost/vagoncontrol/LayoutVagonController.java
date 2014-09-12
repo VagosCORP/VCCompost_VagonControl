@@ -18,6 +18,7 @@ public class LayoutVagonController implements Initializable {
 	
 	VagonControl vControl;
 	Thread th;
+	boolean ti = false;
 	
 	ObservableList<Float> itemss1 = FXCollections.observableArrayList();
 	ObservableList<Float> itemss2 = FXCollections.observableArrayList();
@@ -46,12 +47,28 @@ public class LayoutVagonController implements Initializable {
 	@FXML ListView<String> horas;
 	
 	@FXML public void tempClick() {
+		vControl.adquirir(1);
+	}
+	
+	@FXML public void iBombClick() {
+		lblBomba.setText("Bomba Encendida");
+		vControl.BombaOn();
+		
+	}
+	
+	@FXML public void aBombClick() {
+		lblBomba.setText("Bomba Apagada");
+		vControl.BombaOff();
+	}
+	
+	void initMu() {
+		ti = true;
 		text.appendText("Adquisicion Iniciada!\r\n");
-		vControl = new VagonControl();
+		vControl = new VagonControl("10.0.0.55");
 		vControl.setTListener(new TListener() {
 
 			@Override
-			public void OnDataReceived() {
+			public void OnDataReceived(String linea) {
 				Platform.runLater(new Runnable() {
 					
 					@Override
@@ -74,6 +91,18 @@ public class LayoutVagonController implements Initializable {
 						list7.setItems(itemss7);
 						list8.setItems(itemss8);
 						horas.setItems(itemsh);
+						
+					}
+				});
+			}
+
+			@Override
+			public void OnInfoReceived(String linea) {
+				Platform.runLater(new Runnable() {
+					
+					@Override
+					public void run() {
+						text.appendText(linea);
 					}
 				});
 			}		
@@ -83,19 +112,8 @@ public class LayoutVagonController implements Initializable {
 		th.start();
 	}
 	
-	@FXML public void iBombClick() {
-		lblBomba.setText("Bomba Encendida");
-		vControl.BombaOn();
-		
-	}
-	
-	@FXML public void aBombClick() {
-		lblBomba.setText("Bomba Apagada");
-		vControl.BombaOff();
-	}
-	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		
+		initMu();
 	}
 }

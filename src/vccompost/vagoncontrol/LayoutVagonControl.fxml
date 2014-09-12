@@ -8,7 +8,7 @@
 <AnchorPane fx:id="root" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vccompost.vagoncontrol.LayoutVagonController">
   <!-- TODO Add Nodes -->
   <children>
-    <Button fx:id="cTemp" layoutX="18.0" layoutY="14.0" mnemonicParsing="false" onAction="#tempClick" text="Tomar Datos" />
+    <Button fx:id="cTemp" layoutX="18.0" layoutY="14.0" mnemonicParsing="false" onAction="#tempClick" text="Pausar/Reanudar Muestreo" />
     <TextArea fx:id="text" layoutX="66.0" layoutY="448.0" prefHeight="225.0" prefWidth="734.0" wrapText="true" />
     <Label id="label" fx:id="Label1" layoutX="14.0" layoutY="46.0" prefHeight="27.0" prefWidth="71.0" text="Label" />
     <ListView fx:id="list1" layoutX="185.0" layoutY="22.0" prefHeight="192.0" prefWidth="200.0" />

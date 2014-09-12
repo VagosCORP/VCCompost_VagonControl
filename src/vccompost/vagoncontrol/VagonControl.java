@@ -10,12 +10,8 @@ import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.util.Duration;
 import vclibs.communication.Eventos.OnComunicationListener;
 import vclibs.communication.Eventos.OnConnectionListener;
 import vclibs.communication.Eventos.OnTimeOutListener;
@@ -25,158 +21,227 @@ import vclibs.communication.javafx.TimeOut;
 public class VagonControl extends Task<Integer> {
 
 	Thread th, thto;
-	Comunic comunic;
-	Timeline timer;
-	TimeOut timeout;
-	boolean bombear = false;
+	Comunic comunic = null;
+	TimeOut timeout = new TimeOut(2000);
 	String tarea = "";
-	public float[] sen	= { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	float[] sen0		= { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	public static float ERROR = (float) 23.222;
+	String IP = "10.0.0.55";
+	int Port = 2000;
+	public float[] sen	= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	float[] sen0	= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	static final int ENCENDER = 111;
+	static final int APAGAR = 112;
+	static final int CONSULTAR = 113;
+	static final int TEMP = 5;
+	static final int BOMB = 3;
+	static final int GUT_CON = 0;
+	static final int GUT_OFF = 0;
+	static final int GUT_ON = 1;
+	static final int ERR_ON = 2;
+	static final int ERR_OFF = 3;
+	static final int ERR_COM = 4;
+	static final int ERR_CON = 5;
+	public static float ERROR = (float) 999.9999;
+	public String linea = "";
 	public String hora = "dd-MM-yyyy HH:mm:ss";
 	SimpleDateFormat date = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US);
-	private Path pathRegistro;
+	Path pathRegistro;
+	final String pathlogs = "C://VCCompost//log//";
+	String pathbomblog = pathlogs + "bomblog.rep";
+	String pathtemplog = pathlogs + "templog.rep";
 	PrintWriter oStReg=null;
 
 	TListener tListener;
 	public interface TListener {
-		public void OnDataReceived();
+		public void OnInfoReceived(String txt);
+		public void OnDataReceived(String txt);
 	}
 	public void setTListener(TListener listener) {
 		tListener = listener;
 	}
 
-	public VagonControl() {
+	public VagonControl(String BioRIP) {
+		IP = BioRIP;
 		BombaOff();
-	}
-	
-	public void protocolo() {
-		timer = new Timeline(new KeyFrame(Duration.minutes(1),
-				new EventHandler<ActionEvent>() {
-
-					@Override
-					public void handle(ActionEvent event) {
-							adquirir(1);
-					}
-				}));
-		timer.setCycleCount(Timeline.INDEFINITE);
-		timer.play();
 	}
 
 	@Override
 	protected Integer call() throws Exception {
-		adquirir(1);
-		protocolo();
+		while(!isCancelled()) {
+			Thread.sleep(60000);
+			adquirir(1);
+		}
 		return null;
 	}
 	
-	public void adquirir(int n250) {
-		comunic = new Comunic("20.0.0.6", 2000);
-//		comunic.debug = false;
-//		comunic.idebug = false;
-//		comunic.edebug = false;
-		comunic.ecom = false;//no palabra de finalización
-		comunic.setConnectionListener(new OnConnectionListener() {
+	public void setIP(String newIP) {
+		IP = newIP;
+	}
 
-			@Override
-			public void onConnectionstablished() {
-				timeout = new TimeOut(2000);
-//				timeout.idebug = false;
-//				timeout.edebug = false;
-				timeout.setTimeOutListener(new OnTimeOutListener() {
-
-					@Override
-					public void onTimeOutEnabled() {
-
+	public int adquirir(int n250) {
+		int res = 0;
+		sen	= sen0;
+		sen[0] = ERR_CON;
+		if(comunic == null || comunic.estado != comunic.CONNECTED) {
+			comunic = new Comunic(IP, Port);
+			comunic.setConnectionListener(new OnConnectionListener() {
+	
+				@Override
+				public void onConnectionstablished() {
+					sen[0] = GUT_CON;
+					enTimeOut(2000);
+					writeilog("Conexión Establecida!", TEMP);
+					if (n250 == 1) {
+						comunic.enviar('A');
+					} else {
+						comunic.enviar('B');
+						comunic.enviar(n250);
 					}
-
-					@Override
-					public void onTimeOutCancelled() {
-						
+				}
+	
+				@Override
+				public void onConnectionfinished() {
+					if(sen[0] == ERR_COM) {
+						sen[0] = 0;
+						writeilog("Error de Comunicacion", TEMP);
 					}
-
-					@Override
-					public void onTimeOut() {
+					if(sen[0] == ERR_CON) {
+						sen[0] = 0;
+						writeilog("Error de Conexión", TEMP);
+					}
+				}
+			});
+			comunic.setComunicationListener(new OnComunicationListener() {
+	
+				@Override
+				public void onDataReceived(String dato) {
+					tarea += dato;
+					if (dato.endsWith("/")) {
+						timeout.cancel();
 						comunic.Detener_Actividad();
+						procesar(tarea, TEMP);
+						tarea = "";
+						String info =
+								"\r\n     S1e = " + sen[1] + " S1i = " + sen[2] + " S2i = " + sen[3] + " S2e = " + sen[4] +
+								"\r\n     Ext = " + sen[5] + " Med = " + sen[6] + " Tri = " + sen[7] + " Tre = " + sen[8];
+						writelog(info, TEMP);
 					}
-				});
-				thto = new Thread(timeout);
-				thto.setDaemon(true);
-				thto.start();
-				if (n250 == 1) {
-					comunic.enviar('A');
-				} else {
-					comunic.enviar('B');
-					comunic.enviar(n250);
 				}
-			}
-
-			@Override
-			public void onConnectionfinished() {
-
-			}
-		});
-		comunic.setComunicationListener(new OnComunicationListener() {
-
-			@Override
-			public void onDataReceived(String dato) {
-				tarea += dato;
-				if (dato.endsWith("/")) {
-					timeout.cancel();
-					comunic.Detener_Actividad();
-					procesar(tarea);
-					tarea = "";
-					hora = date.format(new GregorianCalendar().getTime()).toString();
-					pathRegistro=Paths.get("D://Documents//Compost//log");
-					if(Files.notExists(pathRegistro)){
-		                try {
-		                    Files.createFile(pathRegistro);
-		                } catch (IOException ex) {
-		                    
-		                }
-		            }
-					System.out.println(
-							"hora=" + hora  +
-							" S1e=" + sen[1] +
-							" S1i=" + sen[2] +
-							" S2i=" + sen[3] +
-							" S2e=" + sen[4] +
-							" Ext=" + sen[5] +
-							" Med=" + sen[6] +
-							" Tri=" + sen[7] +
-							" Tre=" + sen[8]);
-					if (tListener != null)
-						tListener.OnDataReceived();
-					try {
-						oStReg=new PrintWriter(new FileWriter("D://Documents//Compost//log//templog.rep",true));
-						oStReg.println("hora=" + hora  +
-								" S1e=" + sen[1] +
-								" S1i=" + sen[2] +
-								" S2i=" + sen[3] +
-								" S2e=" + sen[4] +
-								" Ext=" + sen[5] +
-								" Med=" + sen[6] +
-								" Tri=" + sen[7] +
-								" Tre=" + sen[8]);
-						oStReg.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} 
-				}
-			}
-		});
-		th = new Thread(comunic);
-		th.setDaemon(true);
-		th.start();
+			});
+			th = new Thread(comunic);
+			th.setDaemon(true);
+			th.start();
+		}else {
+			res = 1;
+		}
+		return res;
 	}
 	
-	void procesar(String datos) {
+	public int bomba(int accion) {
+		int res = 0;
+		sen	= sen0;
+		sen[0] = ERR_CON;
+		if(comunic == null || comunic.estado != comunic.CONNECTED) {
+			comunic = new Comunic(IP, Port);
+			comunic.setConnectionListener(new OnConnectionListener() {
+				
+				@Override
+				public void onConnectionstablished() {
+					sen[0] = GUT_CON;
+					enTimeOut(2000);
+					writeilog("Conexión Establecida!", BOMB);
+					if(accion == ENCENDER) {
+						writeilog("Solicitud de Encendido de Bomba", BOMB);
+						comunic.enviar('V');
+						timeout.cancel();
+						comunic.Detener_Actividad();
+					}else if(accion == APAGAR) {
+						writeilog("Solicitud de Apagado de Bomba", BOMB);
+						comunic.enviar('W');
+						timeout.cancel();
+						comunic.Detener_Actividad();
+						
+					}else if(accion == CONSULTAR) {
+						writeilog("Solicitud de Estado de Bomba", BOMB);
+						comunic.enviar('Y');
+					}
+				}
+				
+				@Override
+				public void onConnectionfinished() {
+					if(sen[0] == ERR_COM) {
+						sen[0] = 0;
+						writeilog("Error de Comunicacion", BOMB);
+					}
+					if(sen[0] == ERR_CON) {
+						sen[0] = 0;
+						writeilog("Error de Conexión", BOMB);
+					}
+				}
+			});
+			comunic.setComunicationListener(new OnComunicationListener() {
+				
+				@Override
+				public void onDataReceived(String dato) {
+					tarea += dato;
+					if (dato.endsWith("/")) {
+						timeout.cancel();
+						comunic.Detener_Actividad();
+						procesar(tarea, BOMB);
+						tarea = "";
+						String info = "";
+						if(sen[9] == GUT_ON) {
+							info = "Bomba Encendida";
+						}else if(sen[9] == GUT_OFF) {
+							info = "Bomba Apagada";
+						}else if(sen[9] == ERR_ON) {
+							info = "Error al Encender Bomba";
+						}else if(sen[9] == ERR_OFF) {
+							info = "Error al Apagar Bomba";
+						}
+						writeilog(info, BOMB);
+					}
+				}
+			});
+			th = new Thread(comunic);
+			th.setDaemon(true);
+			th.start();
+		}else {
+			res = 1;
+		}
+		return res;
+	}
+	
+	void enTimeOut(int ms) {
+		timeout = new TimeOut(ms);
+		timeout.setTimeOutListener(new OnTimeOutListener() {
+
+			@Override
+			public void onTimeOutEnabled() {
+
+			}
+
+			@Override
+			public void onTimeOutCancelled() {
+				
+			}
+
+			@Override
+			public void onTimeOut() {
+				comunic.Detener_Actividad();
+				sen[0] = ERR_COM;
+			}
+		});
+		thto = new Thread(timeout);
+		thto.setDaemon(true);
+		thto.start();
+	}
+	
+	void procesar(String datos, int tip) {
 		String[] p1 = datos.split("#");
 		int f = p1.length;
-		if (f <= 4) {
+		if (f < tip) {
 			System.out.println("Algo salio mal");
-		} else if (f == 5) {
+		} else if (f == tip) {
 			String[] vals = p1[1].split("&");
 			int l = vals.length;
 			int nsen = 0;
@@ -197,38 +262,68 @@ public class VagonControl extends Task<Integer> {
 		}
 	}
 	
-	void Bomb() {
-		if(comunic.estado != comunic.CONNECTED) {
-			comunic = new Comunic("20.0.0.6", 2000);
-			comunic.debug = false;
-			comunic.edebug = false;
-			comunic.ecom = false;
-			comunic.setConnectionListener(new OnConnectionListener() {
-				
-				@Override
-				public void onConnectionstablished() {
-					if(bombear)
-						comunic.enviar('X');
-					else
-						comunic.enviar('Y');
-				}
-				
-				@Override
-				public void onConnectionfinished() {
-					
-				}
-			});
+	void writelog(String info, int tip) {
+		hora = date.format(new GregorianCalendar().getTime()).toString();
+		linea = hora + ":\r\n" + info + "\r\n";
+		if (tListener != null)
+			tListener.OnDataReceived(linea);
+		writeilog(info, tip);
+	}
+	
+	void writeilog(String info, int tip) {
+		hora = date.format(new GregorianCalendar().getTime()).toString();
+		linea = hora + ": " + info + "\r\n";
+		System.out.println(linea);
+		if (tListener != null)
+			tListener.OnInfoReceived(linea);
+		Platform.runLater(new Runnable() {
 			
-		}
+			@Override
+			public void run() {
+				if(Files.notExists(Paths.get(pathlogs))){
+		            try {
+		                Files.createFile(Paths.get(pathlogs));
+		            } catch (IOException ex) {
+		            	System.out.println("No se Pudo crear la ruta de registros");
+		            }
+		        }
+				try {
+				        Files.createFile(Paths.get(pathbomblog));
+				        Files.createFile(Paths.get(pathtemplog));
+				} catch (IOException e) {
+				        System.out.println("No se Pudieron crear los archivos de registro");
+				}
+				if(tip == BOMB) {	
+					try {
+						oStReg=new PrintWriter(new FileWriter(pathbomblog,true));
+						oStReg.println(linea);
+						oStReg.close();
+					} catch (IOException e) {
+						
+						e.printStackTrace();
+					}
+				}else if(tip == TEMP) {
+					try {
+						oStReg=new PrintWriter(new FileWriter(pathtemplog,true));
+						oStReg.println(linea);
+						oStReg.close();
+					} catch (IOException e) {
+						
+						e.printStackTrace();
+					}
+				}
+			}
+		});
 	}
 	
-	void BombaOn() {
-		bombear = true;
-//		Bomb();
+	public void BombaOn() {
+		bomba(ENCENDER);
 	}
 	
-	void BombaOff() {
-		bombear = false;
-//		Bomb();
+	public void BombaOff() {
+		bomba(APAGAR);
+	}
+	public void consultaBomba() {
+		bomba(CONSULTAR);
 	}
 }
