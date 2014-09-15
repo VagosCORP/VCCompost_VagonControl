@@ -323,6 +323,7 @@ public class VagonControl extends Task<Integer> {
 	public void BombaOff() {
 		bomba(APAGAR);
 	}
+	
 	public void consultaBomba() {
 		bomba(CONSULTAR);
 	}
